@@ -34,63 +34,83 @@
       <div v-if="entities.length === 0" class="text-xs text-[#444] tracking-widest uppercase py-6 text-center border border-dashed border-[#222] rounded-sm">
         No {{ props.entityType }} {{ showDoneEntities ? "done" : "planned" }}
       </div>
-      <div
-        v-for="entity in entities"
-        :key="entity.id"
-        class="relative rounded-sm"
-      >
+
+      <template v-for="(entity, index) in sortedEntities" :key="entity.id">
         <div
-          class="absolute inset-0 flex items-center px-4 transition-opacity duration-150"
-          :class="showDoneEntities ? 'bg-red-950/60 justify-end' : 'bg-green-950/60 justify-start'"
-          :style="{ opacity: Math.min(Math.abs(swipeOffset[entity.id] || 0) / 60, 1) }"
+          v-if="showDoneEntities && isNewMonth(entity, index)"
+          class="text-[10px] tracking-[0.2em] uppercase text-white pt-2 pb-1 border-b border-[#1f1f1f]"
         >
-          <svg v-if="!showDoneEntities" class="w-4 h-4 text-[#4ade80]" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-          </svg>
-          <svg v-else class="w-4 h-4 text-[#ef4444]" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
+          {{ getMonthLabel(entity) }}
         </div>
-        <div
-          class="group relative flex items-center justify-between px-3 py-2.5 bg-[#141414] border border-[#1f1f1f] hover:border-[#2a2a2a] transition-colors duration-150 touch-pan-y"
-          :style="{ transform: `translateX(${swipeOffset[entity.id] || 0}px)`, transition: swipingId === entity.id ? 'none' : 'transform 0.3s ease' }"
-          @mousedown="onDragStart($event, entity.id)"
-          @touchstart.passive="onDragStart($event, entity.id)"
-          @mousemove="onDragMove($event, entity.id)"
-          @touchmove="onDragMove($event, entity.id)"
-          @mouseup="onDragEnd(entity.id)"
-          @mouseleave="onDragEnd(entity.id)"
-          @touchend="onDragEnd(entity.id)"
-        >
-          <div class="flex items-center gap-3 min-w-0 flex-1">
-            <div class="w-1 h-4 bg-[#2a2a2a] group-hover:bg-[#e8c84a] transition-colors duration-150 rounded-full shrink-0"></div>
-            <span class="text-sm text-[#c0bdb8] truncate">{{ entity.Name }}</span>
+
+        <div class="relative rounded-sm">
+          <div
+            class="absolute inset-0 flex items-center px-4 transition-opacity duration-150"
+            :class="showDoneEntities ? 'bg-red-950/60 justify-end' : 'bg-green-950/60 justify-start'"
+            :style="{ opacity: Math.min(Math.abs(swipeOffset[entity.id] || 0) / 60, 1) }"
+          >
+            <svg v-if="!showDoneEntities" class="w-4 h-4 text-[#4ade80]" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+            <svg v-else class="w-4 h-4 text-[#ef4444]" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
           </div>
-          <div class="flex items-center gap-3 shrink-0 ml-2">
-            <span v-if="entity.Costs !== ''" class="text-sm font-semibold text-[#888] tabular-nums">
-              {{ entity.Costs.toFixed(2) }} €
-            </span>
-            <button
-              v-if="!showDoneEntities"
-              @click="setEntityToDone(entity.id)"
-              class="hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-6 h-6 items-center justify-center rounded-sm border border-[#2a2a2a] hover:border-[#4ade80] hover:text-[#4ade80] text-[#444]"
-            >
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-              </svg>
-            </button>
-            <button
-              v-if="showDoneEntities"
-              @click="deactivateEntity(entity.id)"
-              class="hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-6 h-6 items-center justify-center rounded-sm border border-[#2a2a2a] hover:border-[#ef4444] hover:text-[#ef4444] text-[#444]"
-            >
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
-            </button>
+          <div
+            class="group relative flex items-center justify-between px-3 py-2.5 bg-[#141414] border border-[#1f1f1f] hover:border-[#2a2a2a] transition-colors duration-150 touch-pan-y"
+            :style="{ transform: `translateX(${swipeOffset[entity.id] || 0}px)`, transition: swipingId === entity.id ? 'none' : 'transform 0.3s ease' }"
+            @mousedown="onDragStart($event, entity.id)"
+            @touchstart.passive="onDragStart($event, entity.id)"
+            @mousemove="onDragMove($event, entity.id)"
+            @touchmove="onDragMove($event, entity.id)"
+            @mouseup="onDragEnd(entity.id)"
+            @mouseleave="onDragEnd(entity.id)"
+            @touchend="onDragEnd(entity.id)"
+          >
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="w-1 h-4 bg-[#2a2a2a] group-hover:bg-[#e8c84a] transition-colors duration-150 rounded-full shrink-0"></div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-sm text-[#c0bdb8] truncate">{{ entity.Name }}</span>
+                <span v-if="entity.Month" class="text-[10px] text-[#444] tracking-wide">
+                  {{ formatDate(entity.Month) }}
+                </span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0 ml-2">
+              <span v-if="entity.Costs !== ''" class="text-sm font-semibold text-[#888] tabular-nums">
+                {{ entity.Costs.toFixed(2) }} €
+              </span>
+              <button
+                @click.stop="openEditModal(entity)"
+                class="hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-6 h-6 items-center justify-center rounded-sm border border-[#2a2a2a] hover:border-[#e8c84a] hover:text-[#e8c84a] text-[#444]"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <button
+                v-if="!showDoneEntities"
+                @click.stop="setEntityToDone(entity.id)"
+                class="hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-6 h-6 items-center justify-center rounded-sm border border-[#2a2a2a] hover:border-[#4ade80] hover:text-[#4ade80] text-[#444]"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+              </button>
+              <button
+                v-if="showDoneEntities"
+                @click.stop="deactivateEntity(entity.id)"
+                class="hidden md:flex opacity-0 group-hover:opacity-100 transition-opacity duration-150 w-6 h-6 items-center justify-center rounded-sm border border-[#2a2a2a] hover:border-[#ef4444] hover:text-[#ef4444] text-[#444]"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
     </div>
     <div v-if="!showDoneEntities" class="mt-1">
       <AddEntity :entityType="props.entityType" />
@@ -102,10 +122,72 @@
       {{ showDoneEntities ? 'Show open' : 'Show done' }} &rarr;
     </button>
   </div>
+
+  <Teleport to="body">
+    <div
+      v-if="editModal.open"
+      class="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/70"
+      @click.self="closeEditModal"
+    >
+      <div class="w-full md:max-w-sm bg-[#0e0e0e] border border-[#2a2a2a] rounded-t-xl md:rounded-xl p-5 flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <p class="text-[10px] tracking-[0.2em] uppercase text-[#555]">Edit {{ props.entityType }}</p>
+          <button @click="closeEditModal" class="text-[#444] hover:text-[#888] transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] tracking-[0.15em] uppercase text-[#444]">Name</label>
+            <input
+              v-model="editModal.data.Name"
+              type="text"
+              class="bg-[#141414] border border-[#2a2a2a] rounded-sm px-3 py-2 text-sm text-[#c0bdb8] focus:outline-none focus:border-[#e8c84a] transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] tracking-[0.15em] uppercase text-[#444]">Costs</label>
+            <input
+              v-model.number="editModal.data.Costs"
+              type="number"
+              step="0.01"
+              class="bg-[#141414] border border-[#2a2a2a] rounded-sm px-3 py-2 text-sm text-[#c0bdb8] focus:outline-none focus:border-[#e8c84a] transition-colors"
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[10px] tracking-[0.15em] uppercase text-[#444]">Date</label>
+            <input
+              v-model="editModal.data.Month"
+              type="month"
+              class="bg-[#141414] border border-[#2a2a2a] rounded-sm px-3 py-2 text-sm text-[#c0bdb8] focus:outline-none focus:border-[#e8c84a] transition-colors [color-scheme:dark]"
+            />
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <button
+            @click="closeEditModal"
+            class="flex-1 py-2 text-[10px] tracking-[0.15em] uppercase text-[#444] border border-[#2a2a2a] rounded-sm hover:text-[#888] hover:border-[#333] transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            @click="saveEdit"
+            class="flex-1 py-2 text-[10px] tracking-[0.15em] uppercase text-[#e8c84a] border border-[#e8c84a]/30 rounded-sm hover:bg-[#e8c84a]/10 transition-colors"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, computed } from "vue";
+import { ref, onMounted, onUnmounted, watch, computed, reactive } from "vue";
 import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase.js";
 import AddEntity from "./AddEntity.vue";
@@ -122,6 +204,16 @@ var swipingId = ref(null);
 var startX = ref(0);
 var startY = ref(0);
 const SWIPE_THRESHOLD = 80;
+
+var editModal = reactive({
+  open: false,
+  entityId: null,
+  data: {
+    Name: '',
+    Costs: 0,
+    Month: ''
+  }
+});
 
 function getClientX(event) {
   return event.touches ? event.touches[0].clientX : event.clientX;
@@ -175,6 +267,63 @@ function onDragEnd(id) {
   swipeOffset.value = { ...swipeOffset.value, [id]: 0 };
 }
 
+const sortedEntities = computed(() => {
+  if (!showDoneEntities.value) return entities.value;
+  return [...entities.value].sort((a, b) => {
+    var dateA = a.Month ? new Date(a.Month) : new Date(0);
+    var dateB = b.Month ? new Date(b.Month) : new Date(0);
+    return dateB - dateA;
+  });
+});
+
+function getMonthKey(entity) {
+  if (!entity.Month) return null;
+  var d = new Date(entity.Month);
+  return `${d.getFullYear()}-${d.getMonth()}`;
+}
+
+function getMonthLabel(entity) {
+  if (!entity.Month) return 'Unknown';
+  return new Date(entity.Month).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+}
+
+function isNewMonth(entity, index) {
+  if (index === 0) return true;
+  return getMonthKey(entity) !== getMonthKey(sortedEntities.value[index - 1]);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function openEditModal(entity) {
+  editModal.entityId = entity.id;
+  editModal.data.Name = entity.Name || '';
+  editModal.data.Costs = entity.Costs ?? 0;
+  editModal.data.Month = entity.Month || '';
+  editModal.open = true;
+}
+
+function closeEditModal() {
+  editModal.open = false;
+  editModal.entityId = null;
+}
+
+async function saveEdit() {
+  if (!editModal.entityId) return;
+  try {
+    await updateDoc(doc(db, props.entityType, editModal.entityId), {
+      Name: editModal.data.Name,
+      Costs: Number(editModal.data.Costs),
+      Month: editModal.data.Month
+    });
+    closeEditModal();
+  } catch (error) {
+    console.error("Error saving edit:", props.entityType, error);
+  }
+}
+
 const progressInPercent = computed(() => {
   var total = totalEntitiesCount.value;
   var done = entitiesDoneCount.value;
@@ -220,7 +369,7 @@ const fetchEntities = (userUID, entityType, showDone) => {
 
     var done = fetchedEntities.filter(e => e.IsDone === true);
     var open = fetchedEntities.filter(e => e.IsDone === false);
-    
+
     entities.value = showDone ? done : open;
     entitiesDoneCount.value = done.length;
     entitiesOpenCount.value = open.length;

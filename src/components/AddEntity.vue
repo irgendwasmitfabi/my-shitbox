@@ -19,12 +19,6 @@
       placeholder="0.00 €"
       @keyup.enter="addEntity"
     />
-    <input
-      class="w-28 bg-transparent text-sm text-[#888] focus:outline-none"
-      type="month"
-      v-model="entity.Month"
-      @keyup.enter="addEntity"
-    />
     <button
       @click="addEntity"
       class="shrink-0 w-6 h-6 flex items-center justify-center text-[#444] hover:text-[#e8c84a] transition-colors duration-150"
@@ -56,7 +50,7 @@ var addEntity = async () => {
     await addDoc(collection(db, props.entityType), {
       Name: entity.value.Name,
       Costs: entity.value.Costs,
-      Month: entity.value.Month,
+      Month: new Date().toISOString().slice(0, 7),
       UserUID: user.uid,
       Timestamp: new Date(),
       IsDone: false,
