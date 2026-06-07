@@ -44,16 +44,32 @@
         </div>
 
         <div class="relative rounded-sm">
+          <!-- Left reveal (open => edit, done => deactivate) -->
           <div
-            class="absolute inset-0 flex items-center px-4 transition-opacity duration-150"
-            :class="showDoneEntities ? 'bg-red-950/60 justify-end' : 'bg-green-950/60 justify-start'"
-            :style="{ opacity: Math.min(Math.abs(swipeOffset[entity.id] || 0) / 60, 1) }"
+            class="absolute inset-0 flex items-center px-4 transition-opacity duration-150 justify-start"
+            :class="showDoneEntities ? 'bg-red-950/60' : 'bg-[#e8c84a]/10'"
+            :style="{ opacity: swipeOffset[entity.id] > 0 ? Math.min(swipeOffset[entity.id] / 60, 1) : 0 }"
+          >
+            <svg v-if="showDoneEntities" class="w-4 h-4 text-[#ef4444]" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            <svg v-else class="w-4 h-4 text-[#e8c84a]" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </div>
+          <!-- Right reveal (open => done, done => edit) -->
+          <div
+            class="absolute inset-0 flex items-center px-4 transition-opacity duration-150 justify-end"
+            :class="!showDoneEntities ? 'bg-green-950/60' : 'bg-[#e8c84a]/10'"
+            :style="{ opacity: swipeOffset[entity.id] < 0 ? Math.min(Math.abs(swipeOffset[entity.id]) / 60, 1) : 0 }"
           >
             <svg v-if="!showDoneEntities" class="w-4 h-4 text-[#4ade80]" fill="none" viewBox="0 0 24 24">
               <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
             </svg>
-            <svg v-else class="w-4 h-4 text-[#ef4444]" fill="none" viewBox="0 0 24 24">
-              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            <svg v-else class="w-4 h-4 text-[#e8c84a]" fill="none" viewBox="0 0 24 24">
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </div>
           <div
@@ -243,9 +259,6 @@ function onDragMove(event, id) {
 
   event.preventDefault();
 
-  if (!showDoneEntities.value && delta > 0) return;
-  if (showDoneEntities.value && delta < 0) return;
-
   var resistance = Math.abs(delta) > 60 ? 60 + (Math.abs(delta) - 60) * 0.3 : Math.abs(delta);
   swipeOffset.value = { ...swipeOffset.value, [id]: delta < 0 ? -resistance : resistance };
 }
@@ -257,10 +270,19 @@ function onDragEnd(id) {
   var offset = swipeOffset.value[id] || 0;
 
   if (Math.abs(offset) >= SWIPE_THRESHOLD) {
-    if (!showDoneEntities.value && offset < 0) {
-      setEntityToDone(id);
-    } else if (showDoneEntities.value && offset > 0) {
-      deactivateEntity(id);
+    const entity = entities.value.find(e => e.id === id);
+    if (!showDoneEntities.value) {
+      if (offset < 0) {
+        setEntityToDone(id);
+      } else {
+        if (entity) openEditModal(entity);
+      }
+    } else {
+      if (offset > 0) {
+        deactivateEntity(id);
+      } else {
+        if (entity) openEditModal(entity);
+      }
     }
   }
 
@@ -294,7 +316,7 @@ function isNewMonth(entity, index) {
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
-  return new Date(dateStr).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  return new Date(dateStr).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
 }
 
 function openEditModal(entity) {
